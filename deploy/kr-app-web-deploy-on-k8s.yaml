@@ -1,0 +1,83 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # 应用描述, 如:统一认证
+    k8s.kuboard.cn/displayName: "认证导航前端模块"
+  labels:
+    k8s.kuboard.cn/layer: web
+    # 应用名称,如:apex-auth
+    k8s.kuboard.cn/name: "web-apex-auth-nav"
+  # 应用名称,如:apex-auth
+  name: "web-apex-auth-nav"
+  namespace: kr-app
+spec:
+  # 副本数,如:2
+  replicas: 2
+  selector:
+    matchLabels:
+      # 展示层
+      k8s.kuboard.cn/layer: web
+      # 应用名称,如:apex-auth
+      k8s.kuboard.cn/name: "web-apex-auth-nav"
+  template:
+    metadata:
+      labels:
+        k8s.kuboard.cn/layer: web
+        # 应用名称,如:apex-auth
+        k8s.kuboard.cn/name: "web-apex-auth-nav"
+    spec:
+      # 亲和性设置,不放在主节点上
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/master
+                    operator: DoesNotExist
+      containers:
+        # 容器名称,如:apex-auth
+        - name: "web-apex-auth-nav"
+          # 容器镜像,如:192.168.0.80/kr-docker/apex-auth-api:V1.6.0.9
+          image: 'IMAGE_PATH'
+          ports:
+            - name: default
+              containerPort: 80
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          imagePullPolicy: IfNotPresent
+      # 镜像仓库认证使用私服proget
+      imagePullSecrets:
+        - name: proget-docker
+      volumes:
+        - configMap:
+            defaultMode: 420
+            # 提前配置好此字典
+            name: nginx-auth-kingsrich-com
+          name: nginx-conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: web
+    k8s.kuboard.cn/name: "web-apex-auth-nav"
+  name: web-apex-auth-nav
+  namespace: kr-app
+spec:
+  ports:
+    - name: default
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    k8s.kuboard.cn/layer: web
+    k8s.kuboard.cn/name: "web-apex-auth-nav"
+  type: ClusterIP
